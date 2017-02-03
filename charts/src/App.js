@@ -6,99 +6,13 @@ import logo from './logo.svg';
 import './App.css';
 
 
-let testData = {
-  "coordinates": [
-    {
-      "month": "2016-11",
-      "fico": "Missing"
-    },
-    {
-      "month": "2016-11",
-      "fico": "700-719"
-    },
-    {
-      "month": "2016-11",
-      "fico": "780-799"
-    },
-    {
-      "month": "2016-11",
-      "fico": "<580"
-    },
-    {
-      "month": "2016-11",
-      "fico": "760-779"
-    },
-    {
-      "month": "2016-11",
-      "fico": "580-599"
-    },
-    {
-      "month": "2016-11",
-      "fico": "720-739"
-    },
-    {
-      "month": "2016-11",
-      "fico": "640-659"
-    },
-    {
-      "month": "2016-11",
-      "fico": ">=800"
-    },
-    {
-      "month": "2016-11",
-      "fico": "740-759"
-    },
-    {
-      "month": "2016-11",
-      "fico": "620-639"
-    },
-    {
-      "month": "2016-11",
-      "fico": "680-699"
-    },
-    {
-      "month": "2016-11",
-      "fico": "600-619"
-    },
-    {
-      "month": "2016-11",
-      "fico": "660-679"
-    }
-  ],
-  "rejected": [
-    182,
-    118,
-    27,
-    447,
-    55,
-    260,
-    98,
-    229,
-    54,
-    65,
-    244,
-    193,
-    244,
-    185
-  ]
-}
-
-// let newTestData = testData.reduce((current,next)=>{
-//
-// })
 
 
-let datas = testData.coordinates
-
-// console.log('what is datas', datas);
 
 
-const dataTransform = ( dataArr ) => {
+
+const transformData = ( dataArr ) => {
   return dataArr.map(data => {
-
-    //start with transforming coordindates;
-
-    // now handle the non-coordinate props
 
     const objMonth = Object.keys(data).reduce(( current, next, index ) => {
       const month = data['coordinates']['month'];
@@ -134,25 +48,37 @@ const dataTransform = ( dataArr ) => {
   })
 }
 
+const sortTransformedData = function(transformedData){
+
+
+}
+
 class NameForm extends React.Component {
   constructor ( props ) {
     super(props);
-    this.state = { value: '' };
+    this.state = {
+      metrics: ''
+    };
 
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
   }
 
   handleChange ( event ) {
-    // this.setState({value: event.target.value});
+    this.setState({metrics: event.target.value});
     // this.setState({
     //   datas:datas
     // })
   }
 
   handleSubmit ( event ) {
-
-    fetch('http://localhost:8786/aggregations/applications/channel/all/product/all?limit=10000&xaxis=month&yaxis=fico&metric=[%22rejected%22,%22preapproved%22]&startdate=2016-01-01&enddate=2016-12-31', {
+    const metrics = this.state.metrics;
+    let metricsParam = (metrics && typeof metrics ==='string' && metrics.length) ? `"${metrics.split(',').join('","').replace(/\s/g,'')}"` : `"all"`;
+    // const baseEndPoint = 'http://localhost:8786/aggregations/applications/channel/all/product/all?limit=10000&xaxis=month&yaxis=fico&metric=[%22rejected%22,%22preapproved%22]&startdate=2016-01-01&enddate=2016-12-31';
+    const baseEndPoint = `http://localhost:8786/aggregations/applications/channel/all/product/all?limit=10000&xaxis=month&yaxis=fico&startdate=2016-01-01&enddate=2016-12-31`;
+    const newEndPoint = `${baseEndPoint}&metric=[${encodeURI(metricsParam)}]`
+    console.log('what is newEndPoint', newEndPoint);
+    fetch(newEndPoint, {
       method: 'get',
       headers: {
         'Accept': 'application/json'
@@ -163,7 +89,7 @@ class NameForm extends React.Component {
     })
     .then(response2 => {
       console.log('what is response2', response2);
-      const arr = dataTransform(response2.size);
+      const arr = transformData(response2.size);
       console.log('what is arr', arr)
       this.setState({ datas: arr })
     })
@@ -175,16 +101,19 @@ class NameForm extends React.Component {
   }
 
   render () {
+
+
     return (
       <div>
         <div>
           <form onSubmit={this.handleSubmit}>
             <label>
-              Name:
-              <input type="text" value={this.state.value} />
+              Metrics:
+              <input type="text" value={this.state.metrics} onChange={this.handleChange}/>
             </label>
             <input type="submit" value="Submit" />
           </form>
+
           <ResponsiveContainer width={1200} height={600}>
             <BarChart
               data={this.state.datas}
@@ -194,8 +123,22 @@ class NameForm extends React.Component {
               <CartesianGrid strokeDasharray="3 3" />
               <Tooltip />
               <Legend />
-              <Bar dataKey="rejected" stackId="a" fill="#8884d8" />
-              <Bar dataKey="preapproved" stackId="a" fill="#82ca9d" />
+              {this.state.metrics.split(',').map((item,index)=>{
+                const random = Math.random();
+                {/*const first = Math.floor(77+(3*(index+1)) * random)*/}
+                const first = 244;
+                const second = Math.floor(37+(7*(index+1)) * random)
+                const third = Math.floor(33+(9*(index+1)) * random)
+                {/*const third = 217;*/}
+                const rgbColor = (index%2==1)
+                  ? `rgb(${first},${second}, ${third})`
+                  : `rgb(${second},${third}, ${first})`;
+                console.log('what is rgbColor', rgbColor)
+                return (
+                  <Bar key={index} dataKey={item.trim()} stackId="a" fill={rgbColor} />
+                )
+
+              })}
             </BarChart>
           </ResponsiveContainer>
         </div>
