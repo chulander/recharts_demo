@@ -1,0 +1,14 @@
+{
+  "name": "jp_charts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "bryan chu <bryan.p.chu@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "create-react-app": "^1.0.3"
+  }
+}
