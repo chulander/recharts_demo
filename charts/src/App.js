@@ -4,6 +4,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { Container, Select, Label, Button } from 're-bulma';
 import logo from './logo.svg';
 import './App.css';
+import {Chart} from './Chart';
 
 
 const transformData = ( dataArr ) => {
@@ -14,7 +15,9 @@ const transformData = ( dataArr ) => {
 
     const mergedObj = Object.assign({}, Object.keys(data).reduce(( current, next ) => {
       if ( typeof data[next] !== 'object' ){
+
         current[next] = data[next];
+
       }
 
       return current;
@@ -24,10 +27,10 @@ const transformData = ( dataArr ) => {
     const month = mergedObj.month;
     return Object.keys(mergedObj).reduce(( current, next, index ) => {
       //first thing is to merge object
-      const excludes = ['count', 'month'];
+      const excludes = ['count', 'id'];
       if ( !excludes.includes(next) ){
         current[month] = Object.assign({}, current[month], {
-          id: month,
+          month: month,
           [mergedObj[next]]: mergedObj.count
         })
       }
@@ -37,47 +40,7 @@ const transformData = ( dataArr ) => {
     return c;
   }, {})
   return superMergedObject
-  //transformed obj to array;
-  // const outputObj = Object.keys(superMergedObject).reduce((current,next)=>{
-  //   current.push(superMergedObject[next]);
-  //   return current;
-  //
-  // },[])
-  //
-  // return outputObj
-  //   const objMonth = Object.keys(data).reduce(( current, next, index ) => {
-  //     const month = data['coordinates']['month'];
-  //     console.log('what is month', month);
-  //     if ( next === 'coordinates' ){
-  //
-  //       console.log('what is current1', current)
-  //       Object.keys(data[next]).forEach(item => {
-  //         console.log('what is item', item);
-  //         console.log('what is data[next][item]', data[next][item]);
-  //         // if ( item !== 'month' ){
-  //         current = Object.assign({}, current, {
-  //           // [month]:Object.assign({},current[month],{
-  //           [item]: data[next][item]
-  //           // })
-  //         })
-  //       })
-  //     }
-  //     else {
-  //
-  //       console.log('what is next', next);
-  //       console.log('what is current2', current)
-  //       current = Object.assign({}, current, {
-  //         // [month]: Object.assign({}, current[month], {
-  //         [next]: data[next]
-  //         // })
-  //       })
-  //     }
-  //     console.log('what is current', current);
-  //     return current;
-  //   }, {});
-  //   console.log('what is objMonth', objMonth);
-  //   return objMonth;
-  // })
+
 }
 
 const sortTransformedDataToArray = function ( datas ) {
@@ -123,10 +86,15 @@ class NameForm extends React.Component {
 
   handleChange ( type ) {
     return ( event ) => {
-
+      console.log(event.target.type);
+      if(event.target.type !=='text'){
+        this.handleSubmit(event)
+      }
       this.setState({
         [type]: event.target.value
       })
+
+
     }
   }
 
@@ -135,7 +103,7 @@ class NameForm extends React.Component {
     // debugger;
     let metricsParam = (metrics && typeof metrics === 'string' && metrics.length && metrics.indexOf(',') !== -1) ? `"${metrics.split(',').join('","').replace(/\s/g, '')}"` : `"${metrics}"`;
     // const baseEndPoint = 'http://localhost:8786/aggregations/applications/channel/all/product/all?limit=10000&xaxis=month&yaxis=fico&metric=[%22rejected%22,%22preapproved%22]&startdate=2016-01-01&enddate=2016-12-31';
-    const baseEndPoint = `http://localhost:8786/aggregations/applications/channel/${this.state.channel}/product/${this.state.product}?limit=10000&xaxis=${this.state.xaxis}&yaxis=${this.state.yaxis}&startdate=2016-11-01&enddate=2016-11-30`;
+    const baseEndPoint = `http://localhost:8786/aggregations/applications/channel/${this.state.channel}/product/${this.state.product}?limit=10000&xaxis=${this.state.xaxis}&yaxis=${this.state.yaxis}&startdate=2016-01-01&enddate=2016-12-30`;
     const newEndPoint = `${baseEndPoint}&metric=[${encodeURI(metricsParam)}]`
     console.log('what is newEndPoint', newEndPoint);
 
@@ -170,7 +138,7 @@ class NameForm extends React.Component {
 
     const items = this.state.metrics.split(',');
     // items.push(this.state.yaxis);
-
+    console.log('what is isArray this.state.datas', Array.isArray(this.state.datas));
     return (
       <Container>
 
@@ -219,45 +187,56 @@ class NameForm extends React.Component {
         {/*<input type="submit" value="Submit" />*/}
         {/*</form>*/}
 
-        <ResponsiveContainer width={1700} height={600}>
+        <ResponsiveContainer width={1200} height={600}>
           <BarChart
-            data={this.state.datas}
+            data={this.state.datas
+              ? sortTransformedDataToArray(this.state.datas)
+              : []
+            }
             margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
           >
-            <XAxis dataKey={sortTransformedDataToArray(this.state.datas)} />
+            <XAxis dataKey={this.state.xaxis} />
             {/*<XAxis/>*/}
             <YAxis />
             {/*<YAxis dateKey={this.state.yaxis}/>*/}
             <CartesianGrid strokeDasharray="3 3" />
             <Tooltip />
             <Legend />
-            { this.state.datas
-              ? this.state.datas.reduce(( current, next , index) => {
+            { (this.state.datas)
+              ? Object.keys(this.state.datas).reduce(( current, next, counter ) => {
+                console.log('what is counter', counter);
+                const data = this.state.datas[next];
+                console.log("what is next", next);
+                console.log("what is data", data);
+                const month = data[this.state.xaxis];
+                console.log('what is month', month);
+                const chartArr = Object.keys(data).reduce(( c, n, index ) => {
 
-              console.log("what is next", next);
+                  if(n!=='month' && !/2016/g.test(n)){
+                    console.log('what is n', n);
+                    console.log('what is typeof n', typeof n);
+                    const random = Math.random();
+                    const first = 244;
+                    const second = Math.floor(37 + (7 * (index + 1)) * random)
+                    const third = Math.floor(33 + (9 * (index + 1)) * random)
+
+                    const rgbColor = (index % 2 == 1)
+                      ? `rgb(${first},${second}, ${third})`
+                      : `rgb(${second},${third}, ${first})`;
+                    {/*console.log('what is rgbColor', rgbColor);*/}
 
 
-                const random = Math.random();
-                const first = 244;
-                const second = Math.floor(37 + (7 * (index + 1)) * random)
-                const third = Math.floor(33 + (9 * (index + 1)) * random)
+                    const bar = <Bar key={index} dataKey={n} stackId={month} fill={rgbColor} />
+                    c.push(bar);
+                  }
 
-                const rgbColor = (index % 2 == 1)
-                  ? `rgb(${first},${second}, ${third})`
-                  : `rgb(${second},${third}, ${first})`;
-                console.log('what is rgbColor', rgbColor);
+                  return c;
+                }, [])
+                console.log('what is charArr', chartArr);
 
-
-                const bar = <Bar key={index} dataKey={next} stackId="a" fill={rgbColor} />
-                current.push(bar);
-                return current;
-
-
-
-
-
-            },[])
-            : undefined
+                return [...chartArr];
+              }, [])
+              : undefined
             }
           </BarChart>
         </ResponsiveContainer>
