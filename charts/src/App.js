@@ -4,7 +4,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { Container, Select, Label, Button } from 're-bulma';
 import logo from './logo.svg';
 import './App.css';
-import {Chart} from './Chart';
+// import {Chart} from './Chart';
 
 
 const transformData = ( dataArr ) => {
