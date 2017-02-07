@@ -6,7 +6,24 @@ import logo from './logo.svg';
 import './App.css';
 // import {Chart} from './Chart';
 
-
+const colors = [
+  '#f4e542',
+  '#f44242',
+  '#42f48f',
+  '#42f4eb',
+  '#4277f4',
+  '#f442f1',
+  '#f4428f',
+  '#f4426e',
+  '#4c0315',
+  '#37034c',
+  '#03164c',
+  '#034c2b',
+  '#434c03',
+  '#4c0903',
+  '#272835',
+  '#190e10',
+]
 class NameForm extends React.Component {
   constructor ( props ) {
     super(props);
@@ -38,10 +55,82 @@ class NameForm extends React.Component {
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.transformData = this.transformData.bind(this);
+    this.sortData = this.sortData.bind(this);
+  }
+
+  sortData ( dataArr ) {
+    console.log('what is dataArr', dataArr);
+    const yaxisKey = `${this.state.yaxis}_group`;
+    const _parseNumber = ( item ) => item && item.split('-').length === 2 ? item.split('-')[0] : undefined;
+    const _isEquality = ( item ) => (/</.test(item) || />=/.test(item)) ? true : false;
+    const _parseEquality = ( item ) => {
+      if ( /</.test(item) ){
+        return -1
+      }
+      if ( />=/.test(item) ){
+        return 1
+      }
+      return 0;
+    }
+
+    const hyphenatedArr = dataArr.filter(item => _parseNumber(item[yaxisKey]))
+    .sort(( a, b ) => {
+      const leftValue = a[yaxisKey];
+      const rightValue = b[yaxisKey];
+      const leftNumeric = _parseNumber(leftValue);
+      const rightNumeric = _parseNumber(rightValue);
+      if ( leftNumeric < rightNumeric ){
+        return -1
+      }
+      if ( leftNumeric > rightNumeric ){
+        return 1;
+      }
+      return 0;
+    })
+    const equalityArr = dataArr.filter(item => _isEquality(item[yaxisKey]))
+    .sort(( a, b ) => {
+      const leftEquality = _parseEquality(a[yaxisKey]);
+      const rightEquality = _parseEquality(b[yaxisKey]);
+      if ( leftEquality < rightEquality ){
+        return -1
+      }
+      if ( leftEquality > rightEquality ){
+        return 1;
+      }
+      return 0;
+    })
+    console.log('what is hyphenatedArr', hyphenatedArr)
+    console.log('what is equalityArr', hyphenatedArr);
+
+    const stringArr = dataArr.filter(item => {
+      return ['Missing', 'Invalid'].includes(item[yaxisKey])
+    }).sort(( a, b ) => {
+      if ( a === 'Invalid' ){
+        return -1
+      }
+      if ( b === 'Invalid' ){
+        return -1
+      }
+
+      return 0;
+
+    })
+
+
+    return equalityArr.length
+    ? [...stringArr,equalityArr[0], ...hyphenatedArr,equalityArr[1]]
+      : dataArr.sort((a,b)=>{
+
+      if(a[yaxisKey]<b[yaxisKey]) return -1;
+      if(a[yaxisKey]>b[yaxisKey]) return 1;
+      return 0;
+      })
+
+
   }
 
   transformData ( dataArr ) {
-    console.log('what is dataArr', dataArr);
+    // console.log('what is dataArr', dataArr);
     const xaxisKey = `${this.state.xaxis}_group`;
     const yaxisKey = `${this.state.yaxis}_group`;
 
@@ -51,25 +140,20 @@ class NameForm extends React.Component {
       const yaxisValue = next[yaxisKey];
       const metricValue = this.state.metrics;
 
-      console.log('what is xaxisKey',xaxisKey)
-      console.log('what is yaxisKey',yaxisKey)
-      console.log('what is xaxisValue',xaxisValue)
-      console.log('what is yaxisValue',yaxisValue)
 
-      console.log('what is metricValue',metricValue)
       current[xaxisValue] = Object.assign({}, current[xaxisValue], {
         [yaxisValue]: next[metricValue]
       })
       return current;
-    },{})
-    console.log('what is superMergedObject', superMergedObject);
-    const output = Object.keys(superMergedObject).reduce((current,next)=>{
-      const obj =  Object.assign({}, superMergedObject[next],{
-        [xaxisKey]:next
+    }, {})
+    // console.log('what is superMergedObject', superMergedObject);
+    const output = Object.keys(superMergedObject).reduce(( current, next ) => {
+      const obj = Object.assign({}, superMergedObject[next], {
+        [xaxisKey]: next
       });
       return [...current, obj]
 
-    },[])
+    }, [])
     console.log('what is output', output);
     return output
   }
@@ -93,7 +177,7 @@ class NameForm extends React.Component {
     // debugger;
     let metricsParam = (metrics && typeof metrics === 'string' && metrics.length && metrics.indexOf(',') !== -1) ? `"${metrics.split(',').join('","').replace(/\s/g, '')}"` : `"${metrics}"`;
     // const baseEndPoint = 'http://localhost:8786/aggregations/applications/channel/all/product/all?limit=10000&xaxis=month&yaxis=fico&metric=[%22rejected%22,%22preapproved%22]&startdate=2016-01-01&enddate=2016-12-31';
-    const baseEndPoint = `http://localhost:8786/aggregations/applications/channel/${this.state.channel}/product/${this.state.product}?limit=10000&xaxis=${this.state.xaxis}&yaxis=${this.state.yaxis}&startdate=2016-01-01&enddate=2016-12-30`;
+    const baseEndPoint = `http://localhost:8786/aggregations/applications/channel/${this.state.channel}/product/${this.state.product}?limit=10000&xaxis=${this.state.xaxis}&yaxis=${this.state.yaxis}&startdate=2016-01-01&enddate=2016-11-30`;
     const newEndPoint = `${baseEndPoint}&metric=[${encodeURI(metricsParam)}]`
     console.log('what is newEndPoint', newEndPoint);
 
@@ -112,7 +196,7 @@ class NameForm extends React.Component {
 
 
       this.setState({
-        dataItems: response2.size,
+        dataItems: this.sortData(response2.size),
         dataGroup: this.transformData(response2.size)
       })
     })
@@ -130,7 +214,10 @@ class NameForm extends React.Component {
     // const items = this.state.metrics.split(',');
     // items.push(this.state.yaxis);
     // console.log('what is isArray this.state.datas', Array.isArray(this.state.datas));
-    console.log('what is this.state.dataItems', this.state.dataItems);
+    // console.log('what is this.state.dataItems', this.state.dataItems);
+    // console.log('what is this.state.dataGroup', this.state.dataGroup);
+    const xaxisKey = `${this.state.xaxis}_group`;
+    const yaxisKey = `${this.state.yaxis}_group`;
     return (
       <Container>
 
@@ -187,35 +274,29 @@ class NameForm extends React.Component {
             }
             margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
           >
-            <XAxis dataKey={this.state.xaxis} />
-            {/*<XAxis/>*/}
+            <XAxis dataKey={xaxisKey} />
             <YAxis />
-            {/*<YAxis dateKey={this.state.yaxis}/>*/}
             <CartesianGrid strokeDasharray="3 3" />
             <Tooltip />
             <Legend />
             { (this.state.dataItems)
-              ? this.state.dataItems.map(( data, index ) => {
-              console.log('what is index',index);
-                console.log('what is data', data);
-                const xaxis = data[`${this.state.xaxis}_group`];
-                const yaxis = data[`${this.state.yaxis}_group`]
+              ? this.state.dataItems.reduce(( current, data, index ) => {
 
-                const random = Math.random();
-                const first = 244;
-                const second = Math.floor(37 + (7 * (index + 1)) * random)
-                const third = Math.floor(33 + (9 * (index + 1)) * random)
-
-                const rgbColor = (index % 2 == 1)
-                  ? `rgb(${first},${second}, ${third})`
-                  : `rgb(${second},${third}, ${first})`;
+                const xaxis = data[xaxisKey];
+                const yaxis = data[yaxisKey]
+                console.log('what is xaxis', xaxis);
+                console.log('what is yaxis', yaxis);
 
 
-                return (
-                  <Bar key={index} dataKey={yaxis} stackId={xaxis} fill={rgbColor} />
-                )
-              })
-              : undefined
+                const bar = <Bar key={index+1} dataKey={yaxis} stackId={xaxis} fill={colors[index]} />
+
+
+                return [...current, bar];
+
+
+
+              }, [])
+              : []
             }
           </BarChart>
         </ResponsiveContainer>
