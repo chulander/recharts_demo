@@ -24,6 +24,29 @@ const colors = [
   '#272835',
   '#190e10',
 ]
+
+const renderLegend = (props) => {
+  const { payload } = props;
+  console.log('payload', payload);
+
+  const tags = payload.reduce((current, entry, index) => {
+    console.log('what is entry', entry);
+    console.log('what is index', index);
+    const value = entry.value.slice(entry.value.indexOf('_')+1);
+    if(!current[value]){
+      entry.value=value;
+      current[value] = <li key={`item-${index}`}>{value}</li>
+    }
+    return current;
+  },{})
+  return (
+    <ul>
+      {
+        {/*Object*/}
+      }
+    </ul>
+  );
+}
 class NameForm extends React.Component {
   constructor ( props ) {
     super(props);
@@ -324,6 +347,8 @@ class NameForm extends React.Component {
             <CartesianGrid strokeDasharray="3 3" />
             <Tooltip />
             <Legend />
+            {/*<Legend content={renderLegend}/>*/}
+            {/*<Legend verticalAlign="bottom"/>*/}
             { (this.state.dataItems)
               ? this.state.dataItems.reduce(( current, data) => {
 
@@ -352,7 +377,7 @@ class NameForm extends React.Component {
                   {/*console.log('what is stackid', xaxis);*/}
 
                   if(n !==xaxisKey){
-                    const bar = <Bar key={index + 1} dataKey={n} stackId={xaxis} fill={colors[index]} />
+                    const bar = <Bar key={index + 1} dataKey={n} stackId={xaxis} fill={colors[index]} label={{fontSize: 12}}/>
 
                     return [...c,bar]
                   } else {
