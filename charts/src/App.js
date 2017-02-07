@@ -57,6 +57,7 @@ class NameForm extends React.Component {
     this.transformData = this.transformData.bind(this);
     this.sortData = this.sortData.bind(this);
     this.handleKeyPress=this.handleKeyPress.bind(this);
+    this.prefixTransformedData=this.prefixTransformedData.bind(this);
   }
 
   sortData ( dataArr ) {
@@ -135,9 +136,13 @@ class NameForm extends React.Component {
 
   transformData ( dataArr ) {
 
-    // console.log('what is dataArr', dataArr);
+    console.log('what is dataArr', dataArr);
+
     const xaxisKey = `${this.state.xaxis}_group`;
     const yaxisKey = `${this.state.yaxis}_group`;
+
+    console.log('what is xaxisKey', xaxisKey);
+    console.log('what is yaxisKey', yaxisKey);
 
     const superMergedObject = dataArr.reduce(( current, next ) => {
 
@@ -146,21 +151,52 @@ class NameForm extends React.Component {
       const metricValue = this.state.metrics;
 
 
+      console.log('superMergedObject: xaxisValue', xaxisValue);
+      console.log('superMergedObject: yaxisValue', yaxisValue);
+      console.log(`superMergedObject: next[${metricValue}]`, next[metricValue])
+
       current[xaxisValue] = Object.assign({}, current[xaxisValue], {
         [yaxisValue]: next[metricValue]
       })
       return current;
     }, {})
-    // console.log('what is superMergedObject', superMergedObject);
+    console.log('what is superMergedObject', superMergedObject);
+    //transform object to array
     const output = Object.keys(superMergedObject).reduce(( current, next ) => {
+      console.log('output: xaxisKey', xaxisKey);
+      console.log('output: next', next);
+
       const obj = Object.assign({}, superMergedObject[next], {
         [xaxisKey]: next
       });
+      console.log('output: what is current', current);
       return [...current, obj]
 
     }, [])
     console.log('what is output', output);
     return output
+  }
+
+  prefixTransformedData (dataArr){
+    const xaxisKey = `${this.state.xaxis}_group`;
+    const yaxisKey = `${this.state.yaxis}_group`;
+
+    // first clone the object or suffer reference hell
+    const newDataArr = dataArr.map(item=>Object.assign({},item));
+    console.log('what is newDataArr', newDataArr);
+    const prefixedData = newDataArr.map(data=>{
+      return Object.keys(data).reduce((current,next)=>{
+        console.log('prefixTransformedData: next', next)
+        if(next ===xaxisKey){
+          current[next]=data[next];
+        } else {
+          current[`${data[xaxisKey]}_${next}`] = data[next];
+        }
+        return current;
+      },{})
+    })
+    console.log('what is prefixedData', prefixedData);
+    return prefixedData
   }
 
   handleKeyPress(event){
@@ -188,7 +224,7 @@ class NameForm extends React.Component {
     // debugger;
     let metricsParam = (metrics && typeof metrics === 'string' && metrics.length && metrics.indexOf(',') !== -1) ? `"${metrics.split(',').join('","').replace(/\s/g, '')}"` : `"${metrics}"`;
     // const baseEndPoint = 'http://localhost:8786/aggregations/applications/channel/all/product/all?limit=10000&xaxis=month&yaxis=fico&metric=[%22rejected%22,%22preapproved%22]&startdate=2016-01-01&enddate=2016-12-31';
-    const baseEndPoint = `http://localhost:8786/aggregations/applications/channel/${this.state.channel}/product/${this.state.product}?limit=10000&xaxis=${this.state.xaxis}&yaxis=${this.state.yaxis}&startdate=2016-01-01&enddate=2016-11-30`;
+    const baseEndPoint = `http://localhost:8786/aggregations/applications/channel/${this.state.channel}/product/${this.state.product}?limit=10000&xaxis=${this.state.xaxis}&yaxis=${this.state.yaxis}&startdate=2016-01-01&enddate=2016-12-31`;
     const newEndPoint = `${baseEndPoint}&metric=[${encodeURI(metricsParam)}]`
     console.log('what is newEndPoint', newEndPoint);
 
@@ -205,10 +241,13 @@ class NameForm extends React.Component {
     .then(response2 => {
       // console.log('what is response2', response2);
 
-
+      const transformedData = this.transformData(response2.size);
+      const prefixedTransformData = this.prefixTransformedData(transformedData);
       this.setState({
-        dataItems: this.sortData(response2.size),
-        dataGroup: this.transformData(response2.size)
+        // dataItems: this.sortData(response2.size),
+        dataGroup: prefixedTransformData,
+        dataItems: prefixedTransformData,
+
       })
     })
     .catch(err => {
@@ -223,13 +262,9 @@ class NameForm extends React.Component {
 
   render () {
 
-    // const items = this.state.metrics.split(',');
-    // items.push(this.state.yaxis);
-    // console.log('what is isArray this.state.datas', Array.isArray(this.state.datas));
-    // console.log('what is this.state.dataItems', this.state.dataItems);
-    // console.log('what is this.state.dataGroup', this.state.dataGroup);
     const xaxisKey = `${this.state.xaxis}_group`;
     const yaxisKey = `${this.state.yaxis}_group`;
+    console.log("what is dataGroup", this.state.dataGroup);
     return (
       <Container onKeyPress={this.handleKeyPress}>
 
@@ -290,19 +325,49 @@ class NameForm extends React.Component {
             <Tooltip />
             <Legend />
             { (this.state.dataItems)
-              ? this.state.dataItems.reduce(( current, data, index ) => {
+              ? this.state.dataItems.reduce(( current, data) => {
+
                 console.log('what is data', data);
-                console.log('what is index', index);
-                const xaxis = data[xaxisKey];
-                const yaxis = data[yaxisKey]
-                console.log('what is xaxis', xaxis);
-                console.log('what is yaxis', yaxis);
+                const prefixedKey = `${yaxisKey}_`;
+                const xaxis = `${yaxisKey}data[xaxisKey]`;
+
+                {/*console.log('what is xaxis', xaxis);*/}
+                {/*console.log('what is yaxis', yaxis);*/}
+                // loop through the object
+                const bars = Object.keys(data).reduce((c,n,index)=>{
+                  {/*console.log('what is n', n)*/}
+                  {/*console.log('what is index', index);*/}
+
+                  const cleanKey = n.replace(prefixedKey,'');
+                  {/*console.log('what is cleanedKey', cleanKey)*/}
+                  {/*console.log('prefixedKey', prefixedKey)*/}
+                  {/*const yaxis = data[n];*/}
+                  //const yaxis = `${yaxisKey}_`
+                  {/*console.log('what is xaxisKey', xaxisKey);*/}
+                  {/*console.log('what is xaxis value', xaxis);*/}
+
+                  {/*console.log('what is yaxisKey', yaxisKey);*/}
+                  {/*console.log('what is yaxis value', yaxis);*/}
+                  console.log('what is dataKey:stackId', n, xaxis);
+                  {/*console.log('what is stackid', xaxis);*/}
+
+                  if(n !==xaxisKey){
+                    const bar = <Bar key={index + 1} dataKey={n} stackId={xaxis} fill={colors[index]} />
+
+                    return [...c,bar]
+                  } else {
+                    console.log("hit else statement")
+                    return c;
+                  }
+
+                },[])
 
 
-                const bar = <Bar key={index + 1} dataKey={yaxis} stackId={xaxis} fill={colors[index]} />
 
 
-                return [...current, bar];
+
+
+                return [...current, ...bars];
 
 
               }, [])
