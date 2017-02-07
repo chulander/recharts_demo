@@ -99,8 +99,6 @@ class NameForm extends React.Component {
       }
       return 0;
     })
-    console.log('what is hyphenatedArr', hyphenatedArr)
-    console.log('what is equalityArr', hyphenatedArr);
 
     const stringArr = dataArr.filter(item => {
       return ['Missing', 'Invalid'].includes(item[yaxisKey])
@@ -115,21 +113,27 @@ class NameForm extends React.Component {
       return 0;
 
     })
+    console.log('what is hyphenatedArr', hyphenatedArr)
+    console.log('what is equalityArr', equalityArr);
+    console.log('what is stringArr', stringArr);
 
 
     return equalityArr.length
-    ? [...stringArr,equalityArr[0], ...hyphenatedArr,equalityArr[1]]
-      : dataArr.sort((a,b)=>{
+      ? equalityArr.length === 2
+        ? [...stringArr, equalityArr[0], ...hyphenatedArr, equalityArr[1]]
+        : [...stringArr, ...hyphenatedArr, equalityArr.shift()]
+      : dataArr.sort(( a, b ) => {
 
-      if(a[yaxisKey]<b[yaxisKey]) return -1;
-      if(a[yaxisKey]>b[yaxisKey]) return 1;
-      return 0;
+        if ( a[yaxisKey] < b[yaxisKey] ) return -1;
+        if ( a[yaxisKey] > b[yaxisKey] ) return 1;
+        return 0;
       })
 
 
   }
 
   transformData ( dataArr ) {
+
     // console.log('what is dataArr', dataArr);
     const xaxisKey = `${this.state.xaxis}_group`;
     const yaxisKey = `${this.state.yaxis}_group`;
@@ -201,7 +205,8 @@ class NameForm extends React.Component {
       })
     })
     .catch(err => {
-      console.log('what is error', err)
+      console.log('what is error', err.stack);
+
       // Error :(
     });
 
@@ -263,8 +268,6 @@ class NameForm extends React.Component {
           <input type="text" value={this.state.metrics} onChange={this.handleChange('metrics')} />
         </label>
         <Button onClick={this.handleSubmit}>Click</Button>
-        {/*<input type="submit" value="Submit" />*/}
-        {/*</form>*/}
 
         <ResponsiveContainer width={1200} height={600}>
           <BarChart
@@ -281,18 +284,18 @@ class NameForm extends React.Component {
             <Legend />
             { (this.state.dataItems)
               ? this.state.dataItems.reduce(( current, data, index ) => {
-
+                console.log('what is data', data);
+                console.log('what is index', index);
                 const xaxis = data[xaxisKey];
                 const yaxis = data[yaxisKey]
                 console.log('what is xaxis', xaxis);
                 console.log('what is yaxis', yaxis);
 
 
-                const bar = <Bar key={index+1} dataKey={yaxis} stackId={xaxis} fill={colors[index]} />
+                const bar = <Bar key={index + 1} dataKey={yaxis} stackId={xaxis} fill={colors[index]} />
 
 
                 return [...current, bar];
-
 
 
               }, [])
