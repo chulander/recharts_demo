@@ -56,6 +56,7 @@ class NameForm extends React.Component {
     this.handleSubmit = this.handleSubmit.bind(this);
     this.transformData = this.transformData.bind(this);
     this.sortData = this.sortData.bind(this);
+    this.handleKeyPress=this.handleKeyPress.bind(this);
   }
 
   sortData ( dataArr ) {
@@ -162,6 +163,12 @@ class NameForm extends React.Component {
     return output
   }
 
+  handleKeyPress(event){
+    console.log('event.key', event.key);
+    if(event.key ==='Enter'){
+      this.handleSubmit(event);
+    }
+  }
   handleChange ( type ) {
     return ( event ) => {
       console.log(event.target.type);
@@ -224,7 +231,7 @@ class NameForm extends React.Component {
     const xaxisKey = `${this.state.xaxis}_group`;
     const yaxisKey = `${this.state.yaxis}_group`;
     return (
-      <Container>
+      <Container onKeyPress={this.handleKeyPress}>
 
 
         <label>
