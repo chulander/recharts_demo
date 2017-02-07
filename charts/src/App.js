@@ -7,51 +7,6 @@ import './App.css';
 // import {Chart} from './Chart';
 
 
-const transformData = ( dataArr ) => {
-  console.log('what is dataArr', dataArr);
-
-  const superMergedObject = dataArr.reduce(( c, data ) => {
-    const dataIds = data._id;
-
-    const mergedObj = Object.assign({}, Object.keys(data).reduce(( current, next ) => {
-      if ( typeof data[next] !== 'object' ){
-
-        current[next] = data[next];
-
-      }
-
-      return current;
-    }, {}), dataIds);
-    console.log('what is mergedObj', mergedObj);
-
-    const month = mergedObj.month;
-    return Object.keys(mergedObj).reduce(( current, next, index ) => {
-      //first thing is to merge object
-      const excludes = ['count', 'id'];
-      if ( !excludes.includes(next) ){
-        current[month] = Object.assign({}, current[month], {
-          month: month,
-          [mergedObj[next]]: mergedObj.count
-        })
-      }
-
-      return current;
-    }, c)
-    return c;
-  }, {})
-  return superMergedObject
-
-}
-
-const sortTransformedDataToArray = function ( datas ) {
-  return (typeof datas === 'object')
-    ? Object.keys(datas).reduce(( current, next ) => {
-      const monthObj = datas[next];
-      return [...current, monthObj]
-    }, [])
-    : undefined
-}
-
 class NameForm extends React.Component {
   constructor ( props ) {
     super(props);
@@ -82,14 +37,49 @@ class NameForm extends React.Component {
 
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
+    this.transformData = this.transformData.bind(this);
+  }
+
+  transformData ( dataArr ) {
+    console.log('what is dataArr', dataArr);
+    const xaxisKey = `${this.state.xaxis}_group`;
+    const yaxisKey = `${this.state.yaxis}_group`;
+
+    const superMergedObject = dataArr.reduce(( current, next ) => {
+
+      const xaxisValue = next[xaxisKey];
+      const yaxisValue = next[yaxisKey];
+      const metricValue = this.state.metrics;
+
+      console.log('what is xaxisKey',xaxisKey)
+      console.log('what is yaxisKey',yaxisKey)
+      console.log('what is xaxisValue',xaxisValue)
+      console.log('what is yaxisValue',yaxisValue)
+
+      console.log('what is metricValue',metricValue)
+      current[xaxisValue] = Object.assign({}, current[xaxisValue], {
+        [yaxisValue]: next[metricValue]
+      })
+      return current;
+    },{})
+    console.log('what is superMergedObject', superMergedObject);
+    const output = Object.keys(superMergedObject).reduce((current,next)=>{
+      const obj =  Object.assign({}, superMergedObject[next],{
+        [xaxisKey]:next
+      });
+      return [...current, obj]
+
+    },[])
+    console.log('what is output', output);
+    return output
   }
 
   handleChange ( type ) {
     return ( event ) => {
       console.log(event.target.type);
-      if(event.target.type !=='text'){
-        this.handleSubmit(event)
-      }
+      // if ( event.target.type !== 'text' ){
+      //   this.handleSubmit(event)
+      // }
       this.setState({
         [type]: event.target.value
       })
@@ -118,12 +108,13 @@ class NameForm extends React.Component {
       return response.json();
     })
     .then(response2 => {
-      console.log('what is response2', response2);
-      const arr = transformData(response2.size);
-      console.log('what is arr', arr)
-      // const arr = response2.size;
+      // console.log('what is response2', response2);
 
-      this.setState({ datas: arr })
+
+      this.setState({
+        dataItems: response2.size,
+        dataGroup: this.transformData(response2.size)
+      })
     })
     .catch(err => {
       console.log('what is error', err)
@@ -136,9 +127,10 @@ class NameForm extends React.Component {
 
   render () {
 
-    const items = this.state.metrics.split(',');
+    // const items = this.state.metrics.split(',');
     // items.push(this.state.yaxis);
-    console.log('what is isArray this.state.datas', Array.isArray(this.state.datas));
+    // console.log('what is isArray this.state.datas', Array.isArray(this.state.datas));
+    console.log('what is this.state.dataItems', this.state.dataItems);
     return (
       <Container>
 
@@ -189,8 +181,8 @@ class NameForm extends React.Component {
 
         <ResponsiveContainer width={1200} height={600}>
           <BarChart
-            data={this.state.datas
-              ? sortTransformedDataToArray(this.state.datas)
+            data={this.state.dataGroup
+              ? this.state.dataGroup
               : []
             }
             margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
@@ -202,40 +194,27 @@ class NameForm extends React.Component {
             <CartesianGrid strokeDasharray="3 3" />
             <Tooltip />
             <Legend />
-            { (this.state.datas)
-              ? Object.keys(this.state.datas).reduce(( current, next, counter ) => {
-                console.log('what is counter', counter);
-                const data = this.state.datas[next];
-                console.log("what is next", next);
-                console.log("what is data", data);
-                const month = data[this.state.xaxis];
-                console.log('what is month', month);
-                const chartArr = Object.keys(data).reduce(( c, n, index ) => {
+            { (this.state.dataItems)
+              ? this.state.dataItems.map(( data, index ) => {
+              console.log('what is index',index);
+                console.log('what is data', data);
+                const xaxis = data[`${this.state.xaxis}_group`];
+                const yaxis = data[`${this.state.yaxis}_group`]
 
-                  if(n!=='month' && !/2016/g.test(n)){
-                    console.log('what is n', n);
-                    console.log('what is typeof n', typeof n);
-                    const random = Math.random();
-                    const first = 244;
-                    const second = Math.floor(37 + (7 * (index + 1)) * random)
-                    const third = Math.floor(33 + (9 * (index + 1)) * random)
+                const random = Math.random();
+                const first = 244;
+                const second = Math.floor(37 + (7 * (index + 1)) * random)
+                const third = Math.floor(33 + (9 * (index + 1)) * random)
 
-                    const rgbColor = (index % 2 == 1)
-                      ? `rgb(${first},${second}, ${third})`
-                      : `rgb(${second},${third}, ${first})`;
-                    {/*console.log('what is rgbColor', rgbColor);*/}
+                const rgbColor = (index % 2 == 1)
+                  ? `rgb(${first},${second}, ${third})`
+                  : `rgb(${second},${third}, ${first})`;
 
 
-                    const bar = <Bar key={index} dataKey={n} stackId={month} fill={rgbColor} />
-                    c.push(bar);
-                  }
-
-                  return c;
-                }, [])
-                console.log('what is charArr', chartArr);
-
-                return [...chartArr];
-              }, [])
+                return (
+                  <Bar key={index} dataKey={yaxis} stackId={xaxis} fill={rgbColor} />
+                )
+              })
               : undefined
             }
           </BarChart>
